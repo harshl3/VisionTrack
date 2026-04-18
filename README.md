@@ -97,8 +97,6 @@ backend/
 *   **Clustering Enhancements:** Grouping hundreds of cameras into map bubbles dynamically zooming.
 *   **Video Feed Proxies:** Connect real RTSP protocols linking Live feed directly to App players.
 
----
-_A dedicated project to ensure safer environments and robust surveillance grids._
 
 
 
