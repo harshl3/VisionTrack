@@ -1,6 +1,5 @@
 # VisionTrack - CCTV Surveillance App
 
-![VisionTrack Logo](assets/images/logo.png)
 
 VisionTrack is a scalable, real-world mobile application designed for Police and Survey Personnel. It enables the registration, management, and visualization of government and private CCTV cameras on an interactive live map. Built with a professional "police-grade" interface, this system integrates robust Node.js backend logic with seamless mobile UI workflows.
 
