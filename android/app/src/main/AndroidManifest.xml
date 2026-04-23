@@ -1,7 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="police_app"
+        android:label="VisionTrack"
         android:name="${applicationName}"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -30,6 +31,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAnJ_oX_6OWg8FiH8un487K-94mjntvpNc" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

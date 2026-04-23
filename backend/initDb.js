@@ -36,6 +36,25 @@ const initDb = async () => {
     await db.query(camerasTable);
     console.log('Cameras table created or exists.');
     
+    // Seed Admins
+    const bcrypt = require('bcrypt');
+    const admins = [
+      { email: 'admin1@gmail.com', password: 'admin1', name: 'Admin One' },
+      { email: 'admin2@gmail.com', password: 'admin2', name: 'Admin Two' },
+      { email: 'admin3@gmail.com', password: 'admin3', name: 'Admin Three' }
+    ];
+
+    for (let admin of admins) {
+      const hashedPass = await bcrypt.hash(admin.password, 10);
+      await db.query(`
+        INSERT INTO users (name, email, password, role) 
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (email) DO UPDATE 
+        SET password = EXCLUDED.password
+      `, [admin.name, admin.email, hashedPass, 'POLICE']);
+      console.log(`[SUCCESS] Seeded/Updated admin account: ${admin.email}`);
+    }
+    
     process.exit(0);
   } catch (error) {
     console.error('Error initializing database:', error);

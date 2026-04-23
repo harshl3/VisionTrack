@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
-import 'login_screen.dart';
+import 'role_selection_screen.dart';
 import 'camera_registration_screen.dart';
 
 class MapDashboardScreen extends StatefulWidget {
@@ -127,7 +127,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
               authProvider.logout();
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
               );
             },
           ),

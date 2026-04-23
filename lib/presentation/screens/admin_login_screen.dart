@@ -4,40 +4,22 @@ import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
 import 'map_dashboard_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class AdminLoginScreen extends StatefulWidget {
+  const AdminLoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkAutoLogin();
-  }
-
-  Future<void> _checkAutoLogin() async {
-    await Provider.of<AuthProvider>(context, listen: false).tryAutoLogin();
-    if (!mounted) return;
-    
-    if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
-      );
-    }
-  }
-
   void _login() async {
     if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password.'), backgroundColor: AppColors.dangerRed),
+        const SnackBar(content: Text('Please enter explicit Admin credentials.'), backgroundColor: AppColors.dangerRed),
       );
       return;
     }
@@ -50,16 +32,26 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
+      // Security check: Only allow if Role is POLICE
+      if (Provider.of<AuthProvider>(context, listen: false).role != 'POLICE') {
+        Provider.of<AuthProvider>(context, listen: false).logout();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Access Denied. Non-admin account.'), backgroundColor: AppColors.dangerRed),
+        );
+        return;
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login Successful.'), backgroundColor: AppColors.successGreen),
+        const SnackBar(content: Text('Admin Protocol Activated.'), backgroundColor: AppColors.successGreen),
       );
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
+        (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed. Check server/credentials.'), backgroundColor: AppColors.dangerRed),
+        const SnackBar(content: Text('Authorization failed. Invalid credentials.'), backgroundColor: AppColors.dangerRed),
       );
     }
   }
@@ -67,40 +59,36 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Admin Direct Auth')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/images/logo.png', height: 120),
-              const SizedBox(height: 20),
               const Text(
-                'VisionTrack Security',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textWhite,
-                ),
+                'Headquarters Access',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textWhite),
               ),
               const SizedBox(height: 40),
               TextField(
                 controller: _emailCtrl,
-                decoration: const InputDecoration(hintText: 'Email ID'),
+                decoration: const InputDecoration(hintText: 'Admin Email ID'),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passCtrl,
-                decoration: const InputDecoration(hintText: 'Password'),
+                decoration: const InputDecoration(hintText: 'Admin Password'),
                 obscureText: true,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
               _isLoading
-                  ? const CircularProgressIndicator(color: AppColors.accentBlue)
+                  ? const CircularProgressIndicator(color: AppColors.dangerRed)
                   : ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.dangerRed),
                       onPressed: _login,
-                      child: const Text('SECURE LOGIN'),
+                      child: const Text('SECURE ADMIN LOGIN'),
                     ),
             ],
           ),

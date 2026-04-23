@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/auth_provider.dart';
-import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +28,7 @@ class VisionTrackApp extends StatelessWidget {
       title: 'VisionTrack',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

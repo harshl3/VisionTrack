@@ -40,6 +40,31 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> register(String name, String email, String password) async {
+    final String baseUrl = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:3000';
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'role': 'SURVEY' // User is always Survey
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        // Automatically login after successful registration
+        return await login(email, password);
+      }
+      return false;
+    } catch (e) {
+      print('Register Error: $e');
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     _token = null;
     _role = null;
