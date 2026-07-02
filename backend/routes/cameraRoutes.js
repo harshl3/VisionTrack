@@ -1,16 +1,22 @@
 const express = require('express');
-const { addCamera, getCameras, getCameraById } = require('../controllers/cameraController');
+const {
+  addCamera,
+  getCameras,
+  getCameraById,
+  updateCamera,
+  deleteCamera,
+  getSurveyors,
+} = require('../controllers/cameraController');
 const { authMiddleware, roleMiddleware } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// Get all cameras (Requires Auth)
+router.get('/surveyors/list', authMiddleware, roleMiddleware(['POLICE']), getSurveyors);
 router.get('/', authMiddleware, getCameras);
-
-// Get single camera (Requires Auth)
 router.get('/:id', authMiddleware, getCameraById);
-
-// Add camera (Requires Auth, any role can add. If only survey allowed, add roleMiddleware)
-router.post('/', authMiddleware, addCamera);
+router.post('/add', authMiddleware, roleMiddleware(['SURVEY']), addCamera);
+router.post('/', authMiddleware, roleMiddleware(['SURVEY']), addCamera);
+router.put('/:id', authMiddleware, updateCamera);
+router.delete('/:id', authMiddleware, deleteCamera);
 
 module.exports = router;

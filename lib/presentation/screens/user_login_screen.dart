@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
-import 'map_dashboard_screen.dart';
+import '../../core/utils/dashboard_router.dart';
 import 'user_registration_screen.dart';
 
 class UserLoginScreen extends StatefulWidget {
@@ -33,12 +33,25 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.role != 'SURVEY') {
+        await auth.logout();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Access Denied. Admin accounts must use Admin Login.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User Login Successful.'), backgroundColor: AppColors.successGreen),
       );
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
+        MaterialPageRoute(builder: (_) => DashboardRouter.screenForRole(auth.role)),
         (route) => false,
       );
     } else {

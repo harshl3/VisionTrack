@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
-import 'map_dashboard_screen.dart';
+import '../../core/utils/dashboard_router.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   const UserRegistrationScreen({super.key});
@@ -38,7 +38,11 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
       );
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
+        MaterialPageRoute(
+          builder: (_) => DashboardRouter.screenForRole(
+            Provider.of<AuthProvider>(context, listen: false).role,
+          ),
+        ),
         (route) => false,
       );
     } else {

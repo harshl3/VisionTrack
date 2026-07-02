@@ -12,7 +12,6 @@ class AppTheme {
         primary: AppColors.accentBlue,
         secondary: AppColors.govtCamera,
         surface: AppColors.secondaryNavy,
-        background: AppColors.primaryNavy,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primaryNavy,

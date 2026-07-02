@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'map_dashboard_screen.dart';
+import '../../core/utils/dashboard_router.dart';
 import 'role_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -28,9 +28,10 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
+      final role = Provider.of<AuthProvider>(context, listen: false).role;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
+        MaterialPageRoute(builder: (_) => DashboardRouter.screenForRole(role)),
       );
     } else {
       Navigator.pushReplacement(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -7,10 +8,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AuthProvider with ChangeNotifier {
   String? _token;
   String? _role;
+  int? _userId;
+  String? _userName;
 
   String? get token => _token;
   String? get role => _role;
+  int? get userId => _userId;
+  String? get userName => _userName;
   bool get isAuthenticated => _token != null;
+  bool get isAdmin => _role == 'POLICE';
+  bool get isSurveyor => _role == 'SURVEY';
 
   Future<bool> login(String email, String password) async {
     final String baseUrl = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:3000';
@@ -25,17 +32,21 @@ class AuthProvider with ChangeNotifier {
         final data = jsonDecode(response.body);
         _token = data['token'];
         _role = data['user']['role'];
+        _userId = data['user']['id'];
+        _userName = data['user']['name'];
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', _token!);
         await prefs.setString('user_role', _role!);
-        
+        await prefs.setInt('user_id', _userId!);
+        await prefs.setString('user_name', _userName!);
+
         notifyListeners();
         return true;
       }
       return false;
     } catch (e) {
-      print('Login Error: $e');
+      debugPrint('Login Error: $e');
       return false;
     }
   }
@@ -50,17 +61,15 @@ class AuthProvider with ChangeNotifier {
           'name': name,
           'email': email,
           'password': password,
-          'role': 'SURVEY' // User is always Survey
         }),
       );
 
       if (response.statusCode == 201) {
-        // Automatically login after successful registration
         return await login(email, password);
       }
       return false;
     } catch (e) {
-      print('Register Error: $e');
+      debugPrint('Register Error: $e');
       return false;
     }
   }
@@ -68,9 +77,13 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     _token = null;
     _role = null;
+    _userId = null;
+    _userName = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await prefs.remove('user_role');
+    await prefs.remove('user_id');
+    await prefs.remove('user_name');
     notifyListeners();
   }
 
@@ -80,6 +93,8 @@ class AuthProvider with ChangeNotifier {
 
     _token = prefs.getString('jwt_token');
     _role = prefs.getString('user_role');
+    _userId = prefs.getInt('user_id');
+    _userName = prefs.getString('user_name');
     notifyListeners();
   }
 }

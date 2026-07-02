@@ -2,15 +2,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 
-// Register a new user (Police or Survey)
+// Register a new surveyor account (admin accounts are seeded in PostgreSQL)
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
+  const role = 'SURVEY';
   console.log(`[AUTH] Register request received for email: ${email}, role: ${role}`);
-  
-  if (!['POLICE', 'SURVEY'].includes(role)) {
-    console.warn(`[AUTH] Registration failed: Invalid role provided (${role})`);
-    return res.status(400).json({ message: 'Invalid role' });
-  }
 
   try {
     const existingUser = await db.query('SELECT * FROM users WHERE email = $1', [email]);

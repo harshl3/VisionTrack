@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../providers/auth_provider.dart';
-import 'map_dashboard_screen.dart';
+import '../../core/utils/dashboard_router.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -19,39 +19,58 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   void _login() async {
     if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter explicit Admin credentials.'), backgroundColor: AppColors.dangerRed),
+        const SnackBar(
+          content: Text('Please enter explicit Admin credentials.'),
+          backgroundColor: AppColors.dangerRed,
+        ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    final success = await Provider.of<AuthProvider>(context, listen: false)
-        .login(_emailCtrl.text, _passCtrl.text);
-    
+    final success = await Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    ).login(_emailCtrl.text, _passCtrl.text);
+
     if (!mounted) return;
     setState(() => _isLoading = false);
+    if (!mounted) return;
 
     if (success) {
       // Security check: Only allow if Role is POLICE
-      if (Provider.of<AuthProvider>(context, listen: false).role != 'POLICE') {
-        Provider.of<AuthProvider>(context, listen: false).logout();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.role != 'POLICE') {
+        await authProvider.logout();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Access Denied. Non-admin account.'), backgroundColor: AppColors.dangerRed),
+          const SnackBar(
+            content: Text('Access Denied. Non-admin account.'),
+            backgroundColor: AppColors.dangerRed,
+          ),
         );
         return;
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Admin Protocol Activated.'), backgroundColor: AppColors.successGreen),
+        const SnackBar(
+          content: Text('Admin Protocol Activated.'),
+          backgroundColor: AppColors.successGreen,
+        ),
       );
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MapDashboardScreen()),
+        MaterialPageRoute(
+          builder: (_) => DashboardRouter.screenForRole(authProvider.role),
+        ),
         (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authorization failed. Invalid credentials.'), backgroundColor: AppColors.dangerRed),
+        const SnackBar(
+          content: Text('Authorization failed. Invalid credentials.'),
+          backgroundColor: AppColors.dangerRed,
+        ),
       );
     }
   }
@@ -68,7 +87,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             children: [
               const Text(
                 'Headquarters Access',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textWhite),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textWhite,
+                ),
               ),
               const SizedBox(height: 40),
               TextField(
@@ -86,7 +109,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               _isLoading
                   ? const CircularProgressIndicator(color: AppColors.dangerRed)
                   : ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.dangerRed),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.dangerRed,
+                      ),
                       onPressed: _login,
                       child: const Text('SECURE ADMIN LOGIN'),
                     ),

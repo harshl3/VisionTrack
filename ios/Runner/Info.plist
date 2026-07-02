@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>VisionTrack needs your location to register camera coordinates in the field.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>VisionTrack needs your location to register camera coordinates in the field.</string>
 </dict>
 </plist>

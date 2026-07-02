@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS cameras (
+    id SERIAL PRIMARY KEY,
+    owner_name VARCHAR(100) NOT NULL,
+    contact_number VARCHAR(20) NOT NULL,
+    camera_name VARCHAR(100),
+    camera_type VARCHAR(50),
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    azimuth_angle DOUBLE PRECISION NOT NULL,
+    camera_range DOUBLE PRECISION NOT NULL,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
