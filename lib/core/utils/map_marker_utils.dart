@@ -5,34 +5,48 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 Future<BitmapDescriptor> createCameraMarkerIcon(Color color) async {
-  const int size = 120;
+  const int size = 48; // Clean, compact 48x48 icon size
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(
     recorder,
     Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
   );
 
-  final paint = Paint()..color = color;
-  final body = RRect.fromRectAndRadius(
-    const Rect.fromLTWH(18, 36, 84, 52),
-    const Radius.circular(16),
-  );
-  canvas.drawRRect(body, paint);
+  final center = Offset(size / 2, size / 2);
 
-  final top = RRect.fromRectAndRadius(
-    const Rect.fromLTWH(30, 18, 60, 26),
-    const Radius.circular(12),
-  );
-  canvas.drawRRect(top, paint);
+  // 1. Dark background circle
+  final bgPaint = Paint()
+    ..color = const Color(0xFF0F172A)
+    ..style = PaintingStyle.fill;
+  canvas.drawCircle(center, 20, bgPaint);
 
-  final lensPaint = Paint()..color = Colors.white;
-  canvas.drawCircle(const Offset(60, 62), 18, lensPaint);
-  canvas.drawCircle(const Offset(60, 62), 12, paint);
-  canvas.drawCircle(
-    const Offset(54, 56),
-    4,
-    Paint()..color = Colors.white.withOpacity(0.8),
+  // 2. Colored border ring
+  final borderPaint = Paint()
+    ..color = color
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2.5;
+  canvas.drawCircle(center, 20, borderPaint);
+
+  // 3. Simple 2D Camera Icon inside
+  final iconPaint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.fill;
+
+  // Main camera body
+  final bodyRect = RRect.fromRectAndRadius(
+    Rect.fromLTWH(center.dx - 9, center.dy - 6, 14, 12),
+    const Radius.circular(2.5),
   );
+  canvas.drawRRect(bodyRect, iconPaint);
+
+  // Lens Triangle
+  final lensPath = Path()
+    ..moveTo(center.dx + 5, center.dy - 3)
+    ..lineTo(center.dx + 10, center.dy - 5)
+    ..lineTo(center.dx + 10, center.dy + 5)
+    ..lineTo(center.dx + 5, center.dy + 3)
+    ..close();
+  canvas.drawPath(lensPath, iconPaint);
 
   final picture = recorder.endRecording();
   final ui.Image image = await picture.toImage(size, size);
@@ -43,5 +57,5 @@ Future<BitmapDescriptor> createCameraMarkerIcon(Color color) async {
     return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
   }
   final Uint8List bytes = byteData.buffer.asUint8List();
-  return BitmapDescriptor.fromBytes(bytes);
+  return BitmapDescriptor.bytes(bytes);
 }

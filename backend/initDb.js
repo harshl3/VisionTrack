@@ -1,3 +1,6 @@
+const { validateDatabaseEnv } = require('./config/validateEnv');
+validateDatabaseEnv();
+
 const db = require('./config/db');
 
 const initDb = async () => {

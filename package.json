@@ -1,0 +1,12 @@
+{
+  "name": "visiontrack",
+  "private": true,
+  "description": "VisionTrack monorepo — Flutter app (root) + Node API (backend/)",
+  "scripts": {
+    "install:backend": "npm install --prefix backend",
+    "postinstall": "npm install --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "start": "npm start --prefix backend",
+    "init-db": "npm run init-db --prefix backend"
+  }
+}

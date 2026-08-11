@@ -101,7 +101,18 @@ backend/
 
 
 ## Quick Steps to Launch Right Now:
-* - Make sure your local Postgres database service is running in the background.
-* - Open a terminal in policeApp/backend and type npm run dev. Your backend is now alive.
-* - Launch your Android Emulator.
-* - Open a second terminal precisely in policeApp (the root Flutter folder) and type flutter run to install and launch the app!
+
+1. Edit `backend/.env` with your PostgreSQL user, password, and `JWT_SECRET`.
+2. Make sure PostgreSQL is running.
+3. From the **project root** (`VisionTrack`):
+
+   ```bash
+   npm install
+   npm run init-db
+   npm run dev
+   ```
+
+   Or run the same commands from the `backend/` folder directly.
+
+4. Edit `assets/.env` (`BASE_URL`, `GOOGLE_MAPS_API_KEY`). On Android emulator use `BASE_URL=http://10.0.2.2:3000`.
+5. In a second terminal at the project root: `flutter pub get` then `flutter run`.

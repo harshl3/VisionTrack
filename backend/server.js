@@ -1,6 +1,8 @@
+const { validateDatabaseEnv } = require('./config/validateEnv');
+validateDatabaseEnv();
+
 const app = require('./app');
 const initDb = require('./initDb');
-require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
 
