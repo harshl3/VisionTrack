@@ -20,7 +20,7 @@ function validateDatabaseEnv() {
       `\nMissing in backend/.env: ${missing.join(', ')}\n` +
         'Copy backend/.env.example to backend/.env and fill in your PostgreSQL details.\n',
     );
-    process.exit(1);
+    return;
   }
 
   const stillPlaceholder = PLACEHOLDER_MARKERS.some((marker) => {
@@ -52,7 +52,7 @@ Then run:
 
 Forgot postgres password? Use pgAdmin 4 → Servers → PostgreSQL 18 → Login/Group Roles → postgres → Properties → Definition.
 `);
-    process.exit(1);
+    return;
   }
 }
 

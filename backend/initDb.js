@@ -94,7 +94,7 @@ const initDb = async () => {
     await db.query(migrateCamerasTable);
     console.log('Cameras table migration applied.');
 
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
     const admins = [
       { email: 'admin1@gmail.com', password: 'admin1', name: 'Admin One' },
       { email: 'admin2@gmail.com', password: 'admin2', name: 'Admin Two' },

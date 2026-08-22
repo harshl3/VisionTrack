@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,8 +7,18 @@ import 'presentation/providers/camera_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
 
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
   await dotenv.load(fileName: "assets/.env");
 
   runApp(
