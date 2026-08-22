@@ -1,9 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/map_styles.dart';
 import '../../core/utils/map_marker_utils.dart';
 import '../../data/models/camera.dart';
 import '../providers/auth_provider.dart';
@@ -24,8 +24,7 @@ class SurveyorDashboardScreen extends StatefulWidget {
 class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   int _currentTabIndex = 0;
   Camera? _selectedCamera;
-  BitmapDescriptor? _cameraMarkerIcon;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -33,56 +32,45 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CameraProvider>(context, listen: false).loadCameras();
     });
-    _createCameraMarkerIcon();
   }
 
-  Future<void> _createCameraMarkerIcon() async {
-    final icon = await createCameraMarkerIcon(AppColors.privateCamera);
-    if (!mounted) return;
-    setState(() => _cameraMarkerIcon = icon);
-  }
-
-  Set<Marker> _buildMarkers(List<Camera> cameras) {
+  List<Marker> _buildMarkers(List<Camera> cameras) {
     return cameras.map((camera) {
+      final isSelected = _selectedCamera?.id == camera.id;
+      final isGovt = camera.cameraType.toLowerCase() == 'government';
+      final markerColor = isGovt ? AppColors.govtCamera : AppColors.privateCamera;
+
       return Marker(
-        markerId: MarkerId('camera_${camera.id}'),
-        position: LatLng(camera.latitude, camera.longitude),
-        anchor: const Offset(0.5, 0.5),
-        rotation: camera.azimuthAngle,
-        icon: _cameraMarkerIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-        onTap: () {
-          setState(() => _selectedCamera = camera);
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLng(LatLng(camera.latitude, camera.longitude)),
-          );
-        },
+        point: LatLng(camera.latitude, camera.longitude),
+        width: 48,
+        height: 48,
+        child: CameraMarkerWidget(
+          color: markerColor,
+          azimuthAngle: camera.azimuthAngle,
+          isSelected: isSelected,
+          onTap: () {
+            setState(() => _selectedCamera = camera);
+            _mapController.move(
+              LatLng(camera.latitude, camera.longitude),
+              16,
+            );
+          },
+        ),
       );
-    }).toSet();
+    }).toList();
   }
 
-  Set<Circle> _buildCoverageCircles(List<Camera> cameras) {
+  List<CircleMarker> _buildCoverageCircles(List<Camera> cameras) {
     return cameras.map((camera) {
-      return Circle(
-        circleId: CircleId('coverage_${camera.id}'),
-        center: LatLng(camera.latitude, camera.longitude),
+      return CircleMarker(
+        point: LatLng(camera.latitude, camera.longitude),
         radius: camera.cameraRange,
-        fillColor: AppColors.accentBlue.withValues(alpha: 0.12),
-        strokeColor: AppColors.accentBlue.withValues(alpha: 0.35),
-        strokeWidth: 1,
+        useRadiusInMeter: true,
+        color: AppColors.accentBlue.withValues(alpha: 0.12),
+        borderColor: AppColors.accentBlue.withValues(alpha: 0.35),
+        borderStrokeWidth: 1,
       );
-    }).toSet();
-  }
-
-  Future<void> _openRegistration() async {
-    final added = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const CameraRegistrationScreen()),
-    );
-
-    if (added == true && mounted) {
-      await Provider.of<CameraProvider>(context, listen: false).loadCameras();
-    }
+    }).toList();
   }
 
   void _focusCameraOnMap(Camera camera) {
@@ -90,11 +78,9 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
       _selectedCamera = camera;
       _currentTabIndex = 0;
     });
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(camera.latitude, camera.longitude),
-        16,
-      ),
+    _mapController.move(
+      LatLng(camera.latitude, camera.longitude),
+      16,
     );
   }
 
@@ -234,20 +220,28 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   Widget _buildMapTab(CameraProvider cameraProvider, AuthProvider authProvider, List<Camera> cameras) {
     return Stack(
       children: [
-        GoogleMap(
-          style: MapStyles.darkMapStyle,
-          onMapCreated: (controller) {
-            _mapController = controller;
-          },
-          initialCameraPosition: const CameraPosition(
-            target: LatLng(28.6139, 77.2090),
-            zoom: 11,
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: const LatLng(28.6139, 77.2090),
+            initialZoom: 11,
+            minZoom: 3,
+            maxZoom: 19,
+            onTap: (_, __) {
+              if (_selectedCamera != null) {
+                setState(() => _selectedCamera = null);
+              }
+            },
           ),
-          markers: _buildMarkers(cameras),
-          circles: _buildCoverageCircles(cameras),
-          myLocationEnabled: true,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.visiontrack.police_app',
+              fallbackUrl: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+            ),
+            CircleLayer(circles: _buildCoverageCircles(cameras)),
+            MarkerLayer(markers: _buildMarkers(cameras)),
+          ],
         ),
         if (_selectedCamera != null)
           Positioned(

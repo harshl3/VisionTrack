@@ -1,61 +1,109 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../constants/app_colors.dart';
 
-Future<BitmapDescriptor> createCameraMarkerIcon(Color color) async {
-  const int size = 48; // Clean, compact 48x48 icon size
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(
-    recorder,
-    Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
-  );
+class CameraMarkerWidget extends StatelessWidget {
+  final Color color;
+  final double azimuthAngle;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
-  final center = Offset(size / 2, size / 2);
+  const CameraMarkerWidget({
+    super.key,
+    required this.color,
+    this.azimuthAngle = 0.0,
+    this.isSelected = false,
+    this.onTap,
+  });
 
-  // 1. Dark background circle
-  final bgPaint = Paint()
-    ..color = const Color(0xFF0F172A)
-    ..style = PaintingStyle.fill;
-  canvas.drawCircle(center, 20, bgPaint);
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Direction indicator arrow (if azimuth is set)
+          if (azimuthAngle != 0)
+            Transform.rotate(
+              angle: azimuthAngle * (math.pi / 180),
+              child: Transform.translate(
+                offset: const Offset(0, -18),
+                child: CustomPaint(
+                  size: const Size(12, 12),
+                  painter: _AzimuthArrowPainter(color: color),
+                ),
+              ),
+            ),
 
-  // 2. Colored border ring
-  final borderPaint = Paint()
-    ..color = color
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2.5;
-  canvas.drawCircle(center, 20, borderPaint);
+          // Outer selection glow
+          if (isSelected)
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.3),
+                border: Border.all(color: color, width: 2),
+              ),
+            ),
 
-  // 3. Simple 2D Camera Icon inside
-  final iconPaint = Paint()
-    ..color = Colors.white
-    ..style = PaintingStyle.fill;
-
-  // Main camera body
-  final bodyRect = RRect.fromRectAndRadius(
-    Rect.fromLTWH(center.dx - 9, center.dy - 6, 14, 12),
-    const Radius.circular(2.5),
-  );
-  canvas.drawRRect(bodyRect, iconPaint);
-
-  // Lens Triangle
-  final lensPath = Path()
-    ..moveTo(center.dx + 5, center.dy - 3)
-    ..lineTo(center.dx + 10, center.dy - 5)
-    ..lineTo(center.dx + 10, center.dy + 5)
-    ..lineTo(center.dx + 5, center.dy + 3)
-    ..close();
-  canvas.drawPath(lensPath, iconPaint);
-
-  final picture = recorder.endRecording();
-  final ui.Image image = await picture.toImage(size, size);
-  final ByteData? byteData = await image.toByteData(
-    format: ui.ImageByteFormat.png,
-  );
-  if (byteData == null) {
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+          // Main circular camera marker pin
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primaryNavy,
+              border: Border.all(
+                color: isSelected ? Colors.white : color,
+                width: 2.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(
+                Icons.videocam_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
-  final Uint8List bytes = byteData.buffer.asUint8List();
-  return BitmapDescriptor.bytes(bytes);
 }
+
+class _AzimuthArrowPainter extends CustomPainter {
+  final Color color;
+
+  _AzimuthArrowPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(size.width / 2, size.height * 0.7)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AzimuthArrowPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
