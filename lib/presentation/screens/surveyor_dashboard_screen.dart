@@ -235,9 +235,10 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              urlTemplate:
+                  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+              subdomains: const ['a', 'b', 'c', 'd'],
               userAgentPackageName: 'com.visiontrack.police_app',
-              fallbackUrl: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
             ),
             CircleLayer(circles: _buildCoverageCircles(cameras)),
             MarkerLayer(markers: _buildMarkers(cameras)),
