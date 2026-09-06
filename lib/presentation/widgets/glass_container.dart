@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
 /// Core Glassmorphic Container with Gaussian blur, semi-transparent gradient/color,
-/// glowing borders, and rounded corners.
+/// glowing borders, and rounded corners. Supports both Light and Dark themes.
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -12,8 +12,8 @@ class GlassContainer extends StatelessWidget {
   final double? height;
   final double borderRadius;
   final double blur;
-  final Color backgroundColor;
-  final Color borderColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
   final double borderWidth;
   final Gradient? gradient;
   final List<BoxShadow>? boxShadow;
@@ -28,8 +28,8 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.borderRadius = 16.0,
     this.blur = 12.0,
-    this.backgroundColor = AppColors.glassBackground,
-    this.borderColor = AppColors.glassBorder,
+    this.backgroundColor,
+    this.borderColor,
     this.borderWidth = 1.0,
     this.gradient,
     this.boxShadow,
@@ -38,6 +38,14 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveBgColor = backgroundColor ??
+        (isDark ? AppColors.glassBackground : Colors.white.withValues(alpha: 0.82));
+    final effectiveBorderColor = borderColor ??
+        (isDark
+            ? AppColors.glassBorder
+            : const Color(0xFFCBD5E1).withValues(alpha: 0.8));
+
     return Container(
       width: width,
       height: height,
@@ -48,7 +56,9 @@ class GlassContainer extends StatelessWidget {
         boxShadow: boxShadow ??
             [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.25)
+                    : Colors.black.withValues(alpha: 0.06),
                 blurRadius: 16,
                 spreadRadius: 0,
                 offset: const Offset(0, 8),
@@ -62,11 +72,11 @@ class GlassContainer extends StatelessWidget {
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: effectiveBgColor,
               gradient: gradient,
               borderRadius: BorderRadius.circular(borderRadius),
               border: Border.all(
-                color: borderColor,
+                color: effectiveBorderColor,
                 width: borderWidth,
               ),
             ),
@@ -84,6 +94,7 @@ class GlassCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
+  final Color? backgroundColor;
   final Color? borderColor;
 
   const GlassCard({
@@ -92,18 +103,22 @@ class GlassCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.only(bottom: 12),
     this.onTap,
+    this.backgroundColor,
     this.borderColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardWidget = GlassContainer(
       padding: padding,
       margin: margin,
       borderRadius: 16,
       blur: 14,
-      backgroundColor: AppColors.glassCardBg,
-      borderColor: borderColor ?? AppColors.glassBorder,
+      backgroundColor: backgroundColor ??
+          (isDark ? AppColors.glassCardBg : Colors.white.withValues(alpha: 0.90)),
+      borderColor: borderColor ??
+          (isDark ? AppColors.glassBorder : const Color(0xFFE2E8F0)),
       child: child,
     );
 
@@ -148,6 +163,7 @@ class GlassBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -155,13 +171,16 @@ class GlassBottomNavBar extends StatelessWidget {
           height: 68,
           borderRadius: 24,
           blur: 20,
-          backgroundColor: AppColors.glassNavBg,
-          borderColor: AppColors.glassBorderGlow,
+          backgroundColor:
+              isDark ? AppColors.glassNavBg : Colors.white.withValues(alpha: 0.92),
+          borderColor: isDark ? AppColors.glassBorderGlow : const Color(0xFFBFDBFE),
           borderWidth: 1.2,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           boxShadow: [
             BoxShadow(
-              color: AppColors.accentBlue.withValues(alpha: 0.15),
+              color: isDark
+                  ? AppColors.accentBlue.withValues(alpha: 0.15)
+                  : Colors.blue.withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 2,
               offset: const Offset(0, 4),
@@ -172,7 +191,9 @@ class GlassBottomNavBar extends StatelessWidget {
             children: List.generate(items.length, (index) {
               final item = items[index];
               final isSelected = currentIndex == index;
-              final iconColor = isSelected ? item.activeColor : AppColors.textGrey;
+              final iconColor = isSelected
+                  ? item.activeColor
+                  : (isDark ? AppColors.textGrey : const Color(0xFF64748B));
 
               return InkWell(
                 onTap: () => onTap(index),
@@ -254,30 +275,43 @@ class GlassTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.textWhite : const Color(0xFF0F172A);
+    final textGrey = isDark ? AppColors.textGrey : const Color(0xFF64748B);
+    final hintColor = isDark
+        ? AppColors.textWhite.withValues(alpha: 0.4)
+        : const Color(0xFF0F172A).withValues(alpha: 0.4);
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       onFieldSubmitted: onSubmitted,
       validator: validator,
-      style: const TextStyle(color: AppColors.textWhite, fontSize: 15),
+      style: TextStyle(color: textColor, fontSize: 15),
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
+        labelStyle: TextStyle(color: textGrey, fontSize: 14),
         hintText: hintText,
-        hintStyle: TextStyle(color: AppColors.textWhite.withValues(alpha: 0.4), fontSize: 14),
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.accentBlue, size: 20) : null,
+        hintStyle: TextStyle(color: hintColor, fontSize: 14),
+        prefixIcon:
+            prefixIcon != null ? Icon(prefixIcon, color: AppColors.accentBlue, size: 20) : null,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.black.withValues(alpha: 0.25),
+        fillColor:
+            isDark ? Colors.black.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.glassBorder.withValues(alpha: 0.3)),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.glassBorder.withValues(alpha: 0.3) : const Color(0xFFCBD5E1),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.glassBorder.withValues(alpha: 0.5)),
+          borderSide: BorderSide(
+            color: isDark ? AppColors.glassBorder.withValues(alpha: 0.5) : const Color(0xFFCBD5E1),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

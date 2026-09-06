@@ -18,14 +18,18 @@ const initDb = async () => {
   const camerasTable = `
     CREATE TABLE IF NOT EXISTS cameras (
       id SERIAL PRIMARY KEY,
+      serial_number VARCHAR(100) UNIQUE,
       owner_name VARCHAR(100) NOT NULL,
       contact_number VARCHAR(20) NOT NULL,
       camera_name VARCHAR(100),
       camera_type VARCHAR(50),
+      camera_brand VARCHAR(100),
       latitude DOUBLE PRECISION NOT NULL,
       longitude DOUBLE PRECISION NOT NULL,
       azimuth_angle DOUBLE PRECISION NOT NULL,
       camera_range DOUBLE PRECISION NOT NULL,
+      installation_date DATE,
+      notes TEXT,
       status VARCHAR(50) DEFAULT 'ACTIVE',
       created_by INTEGER REFERENCES users(id),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -80,6 +84,36 @@ const initDb = async () => {
         WHERE table_name = 'cameras' AND column_name = 'camera_name'
       ) THEN
         ALTER TABLE cameras ADD COLUMN camera_name VARCHAR(100);
+      END IF;
+
+      -- New columns migration
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'cameras' AND column_name = 'serial_number'
+      ) THEN
+        ALTER TABLE cameras ADD COLUMN serial_number VARCHAR(100);
+        ALTER TABLE cameras ADD CONSTRAINT cameras_serial_number_unique UNIQUE (serial_number);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'cameras' AND column_name = 'camera_brand'
+      ) THEN
+        ALTER TABLE cameras ADD COLUMN camera_brand VARCHAR(100);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'cameras' AND column_name = 'installation_date'
+      ) THEN
+        ALTER TABLE cameras ADD COLUMN installation_date DATE;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'cameras' AND column_name = 'notes'
+      ) THEN
+        ALTER TABLE cameras ADD COLUMN notes TEXT;
       END IF;
     END $$;
   `;

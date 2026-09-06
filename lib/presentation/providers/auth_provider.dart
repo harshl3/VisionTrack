@@ -10,11 +10,13 @@ class AuthProvider with ChangeNotifier {
   String? _role;
   int? _userId;
   String? _userName;
+  String? _userEmail;
 
   String? get token => _token;
   String? get role => _role;
   int? get userId => _userId;
   String? get userName => _userName;
+  String? get userEmail => _userEmail;
   bool get isAuthenticated => _token != null;
   bool get isAdmin => _role == 'POLICE';
   bool get isSurveyor => _role == 'SURVEY';
@@ -34,12 +36,14 @@ class AuthProvider with ChangeNotifier {
         _role = data['user']['role'];
         _userId = data['user']['id'];
         _userName = data['user']['name'];
+        _userEmail = data['user']['email'] ?? email;
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', _token!);
         await prefs.setString('user_role', _role!);
         await prefs.setInt('user_id', _userId!);
         await prefs.setString('user_name', _userName!);
+        await prefs.setString('user_email', _userEmail!);
 
         notifyListeners();
         return true;
@@ -79,11 +83,13 @@ class AuthProvider with ChangeNotifier {
     _role = null;
     _userId = null;
     _userName = null;
+    _userEmail = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await prefs.remove('user_role');
     await prefs.remove('user_id');
     await prefs.remove('user_name');
+    await prefs.remove('user_email');
     notifyListeners();
   }
 
@@ -95,6 +101,7 @@ class AuthProvider with ChangeNotifier {
     _role = prefs.getString('user_role');
     _userId = prefs.getInt('user_id');
     _userName = prefs.getString('user_name');
+    _userEmail = prefs.getString('user_email');
     notifyListeners();
   }
 }

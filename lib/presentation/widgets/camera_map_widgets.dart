@@ -60,6 +60,7 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: BackdropFilter(
@@ -68,9 +69,9 @@ class _StatCard extends StatelessWidget {
           width: 190,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.glassBackground,
+            color: isDark ? AppColors.glassBackground : Colors.white.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.glassBorder),
+            border: Border.all(color: isDark ? AppColors.glassBorder : const Color(0xFFCBD5E1)),
           ),
           child: Row(
             children: [
@@ -80,11 +81,18 @@ class _StatCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: const TextStyle(color: AppColors.textGrey, fontSize: 10)),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Text(
                       value,
-                      style: const TextStyle(
-                        color: AppColors.textWhite,
+                      style: TextStyle(
+                        color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -112,6 +120,10 @@ class CameraInfoPopup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.textWhite : const Color(0xFF0F172A);
+    final textGrey = isDark ? AppColors.textGrey : const Color(0xFF64748B);
+
     return Material(
       color: Colors.transparent,
       child: ClipRRect(
@@ -122,63 +134,92 @@ class CameraInfoPopup extends StatelessWidget {
             width: 320,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.secondaryNavy.withValues(alpha: 0.90),
+              color: isDark
+                  ? AppColors.secondaryNavy.withValues(alpha: 0.90)
+                  : Colors.white.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.4), width: 1.5),
-              boxShadow: const [
-                BoxShadow(color: Colors.black87, blurRadius: 20, offset: Offset(0, 10)),
+              border: Border.all(
+                color: isDark
+                    ? AppColors.accentBlue.withValues(alpha: 0.4)
+                    : const Color(0xFF93C5FD),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black87 : Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        camera.cameraName,
-                        style: const TextStyle(
-                          color: AppColors.textWhite,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          camera.cameraName,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryNavy,
-                        borderRadius: BorderRadius.circular(8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.primaryNavy : const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          camera.cameraType.toUpperCase(),
+                          style: TextStyle(
+                            color: isDark ? AppColors.textGrey : const Color(0xFF475569),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        camera.cameraType.toUpperCase(),
-                        style: const TextStyle(color: AppColors.textGrey, fontSize: 11),
+                      IconButton(
+                        onPressed: onClose,
+                        icon: Icon(Icons.close, color: textGrey),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: onClose,
-                      icon: const Icon(Icons.close, color: AppColors.textGrey),
-                    ),
-                  ],
-                ),
-                Text(
-                  camera.status,
-                  style: TextStyle(
-                    color: camera.isActive ? AppColors.successGreen : AppColors.dangerRed,
-                    fontWeight: FontWeight.bold,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                _detailRow('Owner', camera.ownerName),
-                _detailRow('Contact', camera.contactNumber),
-                _detailRow('Latitude', camera.latitude.toStringAsFixed(6)),
-                _detailRow('Longitude', camera.longitude.toStringAsFixed(6)),
-                _detailRow('Azimuth', '${camera.azimuthAngle.toStringAsFixed(0)}°'),
-                _detailRow('Range', '${camera.cameraRange.toStringAsFixed(0)} m'),
-                if (camera.surveyorName != null) _detailRow('Surveyor', camera.surveyorName!),
-                _detailRow('Registered', _formatDate(camera.createdAt)),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    camera.status,
+                    style: TextStyle(
+                      color: camera.isActive ? AppColors.successGreen : AppColors.dangerRed,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (camera.serialNumber != null && camera.serialNumber!.isNotEmpty)
+                    _detailRow('Serial No.', camera.serialNumber!, textColor, textGrey),
+                  if (camera.cameraBrand != null && camera.cameraBrand!.isNotEmpty)
+                    _detailRow('Brand', camera.cameraBrand!, textColor, textGrey),
+                  _detailRow('Owner', camera.ownerName, textColor, textGrey),
+                  _detailRow('Contact', camera.contactNumber, textColor, textGrey),
+                  _detailRow('Latitude', camera.latitude.toStringAsFixed(6), textColor, textGrey),
+                  _detailRow('Longitude', camera.longitude.toStringAsFixed(6), textColor, textGrey),
+                  _detailRow('Azimuth', '${camera.azimuthAngle.toStringAsFixed(0)}°', textColor, textGrey),
+                  _detailRow('Range', '${camera.cameraRange.toStringAsFixed(0)} m', textColor, textGrey),
+                  if (camera.installationDate != null)
+                    _detailRow('Installed', _formatDate(camera.installationDate!), textColor, textGrey),
+                  if (camera.surveyorName != null)
+                    _detailRow('Surveyor', camera.surveyorName!, textColor, textGrey),
+                  _detailRow('Registered', _formatDate(camera.createdAt), textColor, textGrey),
+                  if (camera.notes != null && camera.notes!.isNotEmpty)
+                    _detailRow('Notes', camera.notes!, textColor, textGrey),
+                ],
+              ),
             ),
           ),
         ),
@@ -186,7 +227,7 @@ class CameraInfoPopup extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(String label, String value, Color textColor, Color labelColor) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -194,10 +235,10 @@ class CameraInfoPopup extends StatelessWidget {
         children: [
           SizedBox(
             width: 88,
-            child: Text(label, style: const TextStyle(color: AppColors.textGrey, fontSize: 13)),
+            child: Text(label, style: TextStyle(color: labelColor, fontSize: 13)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: AppColors.textWhite, fontSize: 13)),
+            child: Text(value, style: TextStyle(color: textColor, fontSize: 13)),
           ),
         ],
       ),
@@ -210,4 +251,3 @@ class CameraInfoPopup extends StatelessWidget {
         '${date.year}';
   }
 }
-

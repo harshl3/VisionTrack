@@ -4,8 +4,6 @@ const validateCameraPayload = (body, requireAll = true) => {
   const {
     owner_name,
     contact_number,
-    camera_name,
-    camera_type,
     latitude,
     longitude,
     azimuth_angle,
@@ -63,42 +61,44 @@ const buildCameraQuery = (req) => {
   let index = 1;
 
   if (req.user.role === 'SURVEY') {
-    query += ` AND c.created_by = $${index++}`;
+    query += ` AND c.created_by = ${index++}`;
     params.push(req.user.id);
   }
 
   if (search) {
     query += ` AND (
-      c.owner_name ILIKE $${index}
-      OR c.camera_name ILIKE $${index}
-      OR c.contact_number ILIKE $${index}
+      c.owner_name ILIKE ${index}
+      OR c.camera_name ILIKE ${index}
+      OR c.contact_number ILIKE ${index}
+      OR c.serial_number ILIKE ${index}
+      OR c.camera_brand ILIKE ${index}
     )`;
     params.push(`%${search}%`);
     index++;
   }
 
   if (min_range) {
-    query += ` AND c.camera_range >= $${index++}`;
+    query += ` AND c.camera_range >= ${index++}`;
     params.push(Number(min_range));
   }
 
   if (max_range) {
-    query += ` AND c.camera_range <= $${index++}`;
+    query += ` AND c.camera_range <= ${index++}`;
     params.push(Number(max_range));
   }
 
   if (surveyor_id && req.user.role === 'POLICE') {
-    query += ` AND c.created_by = $${index++}`;
+    query += ` AND c.created_by = ${index++}`;
     params.push(Number(surveyor_id));
   }
 
   if (from_date) {
-    query += ` AND c.created_at >= $${index++}`;
+    query += ` AND c.created_at >= ${index++}`;
     params.push(from_date);
   }
 
   if (to_date) {
-    query += ` AND c.created_at <= $${index++}`;
+    query += ` AND c.created_at <= ${index++}`;
     params.push(to_date);
   }
 
@@ -117,27 +117,49 @@ const addCamera = async (req, res) => {
     contact_number,
     camera_name,
     camera_type,
+    camera_brand,
+    serial_number,
     latitude,
     longitude,
     azimuth_angle,
     camera_range,
+    installation_date,
+    notes,
   } = req.body;
 
   try {
+    // Check serial number uniqueness before insert
+    if (serial_number && String(serial_number).trim() !== '') {
+      const existingSerial = await db.query(
+        'SELECT id FROM cameras WHERE serial_number = $1',
+        [String(serial_number).trim()]
+      );
+      if (existingSerial.rows.length > 0) {
+        return res.status(409).json({
+          message: `Camera with serial number "${serial_number}" is already registered in the system. Each camera can only be added once.`,
+        });
+      }
+    }
+
     const result = await db.query(
       `INSERT INTO cameras
-      (owner_name, contact_number, camera_name, camera_type, latitude, longitude, azimuth_angle, camera_range, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (serial_number, owner_name, contact_number, camera_name, camera_type, camera_brand,
+       latitude, longitude, azimuth_angle, camera_range, installation_date, notes, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *`,
       [
+        serial_number ? String(serial_number).trim() : null,
         owner_name,
         contact_number,
         camera_name || owner_name,
         camera_type || 'STATIC',
+        camera_brand || null,
         Number(latitude),
         Number(longitude),
         Number(azimuth_angle),
         Number(camera_range),
+        installation_date || null,
+        notes || null,
         req.user.id,
       ]
     );
@@ -145,6 +167,12 @@ const addCamera = async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('[CAMERA] ERROR inserting new camera:', error);
+    if (error.code === '23505') {
+      // Unique constraint violation
+      return res.status(409).json({
+        message: `Camera with serial number "${serial_number}" is already registered in the system.`,
+      });
+    }
     res.status(500).json({ message: 'Error adding camera', error: error.message });
   }
 };
@@ -207,14 +235,18 @@ const updateCamera = async (req, res) => {
     }
 
     const fields = [
+      'serial_number',
       'owner_name',
       'contact_number',
       'camera_name',
       'camera_type',
+      'camera_brand',
       'latitude',
       'longitude',
       'azimuth_angle',
       'camera_range',
+      'installation_date',
+      'notes',
       'status',
     ];
 
@@ -224,7 +256,7 @@ const updateCamera = async (req, res) => {
 
     for (const field of fields) {
       if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${index++}`);
+        updates.push(`${field} = ${index++}`);
         values.push(req.body[field]);
       }
     }
@@ -235,13 +267,16 @@ const updateCamera = async (req, res) => {
 
     values.push(cameraId);
     const result = await db.query(
-      `UPDATE cameras SET ${updates.join(', ')} WHERE id = $${index} RETURNING *`,
+      `UPDATE cameras SET ${updates.join(', ')} WHERE id = ${index} RETURNING *`,
       values
     );
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error(`[CAMERA] ERROR updating camera ${cameraId}:`, error);
+    if (error.code === '23505') {
+      return res.status(409).json({ message: 'Serial number already in use by another camera.' });
+    }
     res.status(500).json({ message: 'Error updating camera', error: error.message });
   }
 };
@@ -288,3 +323,5 @@ module.exports = {
   deleteCamera,
   getSurveyors,
 };
+
+

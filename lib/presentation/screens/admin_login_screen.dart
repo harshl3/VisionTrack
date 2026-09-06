@@ -75,16 +75,24 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : const Color(0xFF0F172A)),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.darkGradient,
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppColors.darkGradient
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+                ),
         ),
         child: SafeArea(
           child: Center(
@@ -114,21 +122,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Headquarters Portal',
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Restricted Command & Control Access',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textGrey,
+                      color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -138,8 +146,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                     borderRadius: 24,
                     blur: 18,
                     padding: const EdgeInsets.all(28),
-                    borderColor: AppColors.dangerRed.withValues(alpha: 0.35),
-                    backgroundColor: Colors.black.withValues(alpha: 0.35),
+                    borderColor: isDark
+                        ? AppColors.dangerRed.withValues(alpha: 0.35)
+                        : const Color(0xFFCBD5E1),
+                    backgroundColor: isDark
+                        ? Colors.black.withValues(alpha: 0.35)
+                        : Colors.white.withValues(alpha: 0.88),
                     child: Column(
                       children: [
                         GlassTextField(
@@ -167,8 +179,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.dangerRed,
                                     foregroundColor: Colors.white,
-                                    elevation: 8,
-                                    shadowColor: AppColors.dangerRed.withValues(alpha: 0.5),
+                                    elevation: 6,
+                                    shadowColor: AppColors.dangerRed.withValues(alpha: 0.4),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),

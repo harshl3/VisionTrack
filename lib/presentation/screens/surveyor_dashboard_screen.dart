@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -8,6 +9,7 @@ import '../../core/utils/map_marker_utils.dart';
 import '../../data/models/camera.dart';
 import '../providers/auth_provider.dart';
 import '../providers/camera_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/camera_map_widgets.dart';
 import '../widgets/glass_container.dart';
 import 'camera_registration_screen.dart';
@@ -25,6 +27,8 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   int _currentTabIndex = 0;
   Camera? _selectedCamera;
   final MapController _mapController = MapController();
+  LatLng? _userLiveLocation;
+  bool _isLocating = false;
 
   @override
   void initState() {
@@ -32,6 +36,51 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<CameraProvider>(context, listen: false).loadCameras();
     });
+  }
+
+  Future<void> _goToLiveLocation() async {
+    setState(() => _isLocating = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showSnackbar('Location permission denied. Please allow GPS.', isError: true);
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final latLng = LatLng(pos.latitude, pos.longitude);
+      setState(() {
+        _userLiveLocation = latLng;
+      });
+      _mapController.move(latLng, 16);
+      _showSnackbar('Centered on your live location');
+    } catch (e) {
+      _showSnackbar('Could not fetch live location: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  void _showSnackbar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        backgroundColor: isError ? AppColors.dangerRed : AppColors.successGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   List<Marker> _buildMarkers(List<Camera> cameras) {
@@ -60,19 +109,6 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
     }).toList();
   }
 
-  List<CircleMarker> _buildCoverageCircles(List<Camera> cameras) {
-    return cameras.map((camera) {
-      return CircleMarker(
-        point: LatLng(camera.latitude, camera.longitude),
-        radius: camera.cameraRange,
-        useRadiusInMeter: true,
-        color: AppColors.accentBlue.withValues(alpha: 0.12),
-        borderColor: AppColors.accentBlue.withValues(alpha: 0.35),
-        borderStrokeWidth: 1,
-      );
-    }).toList();
-  }
-
   void _focusCameraOnMap(Camera camera) {
     setState(() {
       _selectedCamera = camera;
@@ -87,26 +123,95 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.secondaryNavy,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('End Session', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Are you sure you want to log out of field surveyor session?',
-          style: TextStyle(color: AppColors.textGrey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.dangerRed.withValues(alpha: 0.12),
+                ),
+                child: const Icon(
+                  Icons.power_settings_new_rounded,
+                  color: AppColors.dangerRed,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'End Field Session',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.dangerRed),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Log Out'),
+          content: Text(
+            'Are you sure you want to log out of your field surveyor session?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? AppColors.textGrey : const Color(0xFF475569),
+            ),
           ),
-        ],
-      ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : const Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: AppColors.dangerRed,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text(
+                      'Log Out',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true && mounted) {
@@ -124,6 +229,7 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
     final cameraProvider = Provider.of<CameraProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final cameras = cameraProvider.cameras;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       extendBody: true,
@@ -133,7 +239,7 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.8),
         ),
         centerTitle: true,
-        backgroundColor: AppColors.glassNavBg,
+        backgroundColor: isDark ? AppColors.glassNavBg : const Color(0xFF1E3A5F),
         flexibleSpace: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -154,17 +260,25 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.darkGradient),
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppColors.darkGradient
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+                ),
+        ),
         child: IndexedStack(
           index: _currentTabIndex,
           children: [
-            _buildMapTab(cameraProvider, authProvider, cameras),
-            _buildMyCamerasTab(cameras),
+            _buildMapTab(cameraProvider, authProvider, cameras, isDark),
+            _buildMyCamerasTab(cameras, isDark),
             CameraRegistrationScreen(
               isEmbeddedTab: true,
               onSuccess: () => cameraProvider.loadCameras(),
             ),
-            _buildProfileTab(authProvider, cameraProvider, cameras),
+            _buildProfileTab(authProvider, cameraProvider, cameras, isDark),
           ],
         ),
       ),
@@ -217,7 +331,11 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   }
 
   // TAB 0: MAP VIEW
-  Widget _buildMapTab(CameraProvider cameraProvider, AuthProvider authProvider, List<Camera> cameras) {
+  Widget _buildMapTab(
+      CameraProvider cameraProvider,
+      AuthProvider authProvider,
+      List<Camera> cameras,
+      bool isDark) {
     return Stack(
       children: [
         FlutterMap(
@@ -234,16 +352,28 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
             },
           ),
           children: [
+            // Standard Natural Light OpenStreetMap Tiles - No "API Required"
             TileLayer(
-              urlTemplate:
-                  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-              subdomains: const ['a', 'b', 'c', 'd'],
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.visiontrack.police_app',
             ),
-            CircleLayer(circles: _buildCoverageCircles(cameras)),
-            MarkerLayer(markers: _buildMarkers(cameras)),
+            // Authentic CCTV Directional Vision Cones
+            PolygonLayer(polygons: buildCameraVisionCones(cameras)),
+            // Camera Markers
+            MarkerLayer(markers: [
+              ..._buildMarkers(cameras),
+              // Live User Location Marker
+              if (_userLiveLocation != null)
+                Marker(
+                  point: _userLiveLocation!,
+                  width: 36,
+                  height: 36,
+                  child: const LiveUserLocationMarker(),
+                ),
+            ]),
           ],
         ),
+        // Selected Camera Info Popup
         if (_selectedCamera != null)
           Positioned(
             top: 16,
@@ -254,28 +384,56 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
               onClose: () => setState(() => _selectedCamera = null),
             ),
           ),
+        // Loading Spinner
         if (cameraProvider.isLoading)
           const Center(
             child: CircularProgressIndicator(color: AppColors.accentBlue),
           ),
-        // Welcome banner at bottom
+        // Live Location Floating Button
         Positioned(
-          bottom: 88,
-          left: 16,
+          bottom: 96,
           right: 16,
+          child: FloatingActionButton(
+            heroTag: 'surveyor_live_location',
+            onPressed: _isLocating ? null : _goToLiveLocation,
+            backgroundColor: isDark ? AppColors.secondaryNavy : Colors.white,
+            foregroundColor: AppColors.accentBlue,
+            elevation: 6,
+            tooltip: 'My Live Location',
+            child: _isLocating
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: AppColors.accentBlue,
+                    ),
+                  )
+                : const Icon(Icons.my_location_rounded),
+          ),
+        ),
+        // Status pill top-left
+        Positioned(
+          top: 16,
+          left: 16,
           child: GlassContainer(
-            borderRadius: 16,
-            blur: 14,
-            padding: const EdgeInsets.all(14),
+            borderRadius: 12,
+            blur: 10,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            backgroundColor: isDark
+                ? Colors.black.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.9),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.explore, color: AppColors.accentBlue),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Welcome, ${authProvider.userName ?? 'Surveyor'}. '
-                    '${cameras.length} camera(s) registered.',
-                    style: const TextStyle(color: AppColors.textWhite, fontSize: 13),
+                const Icon(Icons.videocam, color: AppColors.accentBlue, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  '${cameras.length} Active Cameras',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -287,23 +445,34 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   }
 
   // TAB 1: MY CAMERAS LIST
-  Widget _buildMyCamerasTab(List<Camera> cameras) {
+  Widget _buildMyCamerasTab(List<Camera> cameras, bool isDark) {
     return SafeArea(
       child: cameras.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.videocam_off_outlined, size: 64, color: AppColors.textGrey),
-                  SizedBox(height: 16),
+                  Icon(
+                    Icons.videocam_off_outlined,
+                    size: 64,
+                    color: isDark ? AppColors.textGrey : Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'No cameras registered yet.',
-                    style: TextStyle(color: AppColors.textGrey, fontSize: 16),
+                    style: TextStyle(
+                      color: isDark ? AppColors.textGrey : const Color(0xFF475569),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Use the Register tab to add cameras.',
-                    style: TextStyle(color: AppColors.textGrey, fontSize: 13),
+                    style: TextStyle(
+                      color: isDark ? AppColors.textGrey : Colors.grey.shade500,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -336,8 +505,8 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
                           children: [
                             Text(
                               camera.cameraName,
-                              style: const TextStyle(
-                                color: AppColors.textWhite,
+                              style: TextStyle(
+                                color: isDark ? AppColors.textWhite : const Color(0xFF1E293B),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -345,8 +514,8 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
                             const SizedBox(height: 4),
                             Text(
                               '${camera.ownerName} • Range: ${camera.cameraRange.toStringAsFixed(0)}m',
-                              style: const TextStyle(
-                                color: AppColors.textGrey,
+                              style: TextStyle(
+                                color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
                                 fontSize: 12,
                               ),
                             ),
@@ -393,8 +562,13 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
   }
 
   // TAB 3: PROFILE SECTION
-  Widget _buildProfileTab(AuthProvider authProvider, CameraProvider cameraProvider, List<Camera> cameras) {
+  Widget _buildProfileTab(
+      AuthProvider authProvider,
+      CameraProvider cameraProvider,
+      List<Camera> cameras,
+      bool isDark) {
     final activeCameras = cameras.where((c) => c.isActive).length;
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return SafeArea(
       child: ListView(
@@ -406,7 +580,9 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
             blur: 16,
             padding: const EdgeInsets.all(24),
             borderColor: AppColors.accentBlue.withValues(alpha: 0.4),
-            backgroundColor: Colors.black.withValues(alpha: 0.35),
+            backgroundColor: isDark
+                ? Colors.black.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.85),
             child: Column(
               children: [
                 Container(
@@ -425,24 +601,27 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
                 const SizedBox(height: 14),
                 Text(
                   authProvider.userName ?? 'Field Surveyor',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textWhite,
+                    color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'VisionTrack Field Operative',
-                  style: TextStyle(color: AppColors.textGrey, fontSize: 13),
+                Text(
+                  authProvider.userEmail ?? 'surveyor@visiontrack.gov',
+                  style: TextStyle(
+                    color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.accentBlue.withValues(alpha: 0.2),
+                    color: AppColors.accentBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.5)),
+                    border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.4)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -465,63 +644,89 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Stats Row
           Row(
             children: [
               Expanded(
                 child: _buildStatCard(
-                  'REGISTERED',
+                  'TOTAL CAMERAS',
                   cameras.length.toString(),
                   Icons.videocam,
                   AppColors.accentBlue,
+                  isDark,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  'ACTIVE',
+                  'ACTIVE ONLINE',
                   activeCameras.toString(),
                   Icons.check_circle,
                   AppColors.successGreen,
+                  isDark,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // Account Info
+          // Theme Toggle
           GlassContainer(
-            borderRadius: 20,
-            blur: 14,
-            padding: const EdgeInsets.all(20),
-            backgroundColor: Colors.black.withValues(alpha: 0.3),
-            borderColor: AppColors.glassBorder,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            borderRadius: 16,
+            blur: 12,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            backgroundColor: isDark
+                ? Colors.black.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.85),
+            borderColor: isDark ? AppColors.glassBorder : const Color(0xFFE2E8F0),
+            child: Row(
               children: [
-                const Text(
-                  'Account Details',
-                  style: TextStyle(
-                    color: AppColors.textWhite,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Icon(
+                  themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
+                  color: themeProvider.isDark
+                      ? AppColors.purpleAccent
+                      : const Color(0xFFF59E0B),
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        themeProvider.isDark ? 'Dark Mode' : 'Light Mode',
+                        style: TextStyle(
+                          color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        'Tap switch to toggle theme',
+                        style: TextStyle(
+                          color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                _buildInfoRow(Icons.person_outline, 'Operative Name', authProvider.userName ?? 'N/A'),
-                _buildInfoRow(Icons.badge_outlined, 'Role', 'SURVEY (Field Operative)'),
-                _buildInfoRow(Icons.map_outlined, 'GIS Engine', 'Google Maps Platform'),
-                _buildInfoRow(Icons.security_outlined, 'Session', 'Active (JWT Auth)'),
+                Switch(
+                  value: !themeProvider.isDark,
+                  onChanged: (_) => themeProvider.toggleTheme(),
+                  activeThumbColor: const Color(0xFFF59E0B),
+                  inactiveTrackColor: AppColors.purpleAccent.withValues(alpha: 0.4),
+                ),
               ],
             ),
           ),
 
           const SizedBox(height: 24),
 
-          // Logout
+          // Logout Button
           SizedBox(
             height: 52,
             child: ElevatedButton.icon(
@@ -529,6 +734,7 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
                 backgroundColor: AppColors.dangerRed,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 4,
               ),
               onPressed: _logout,
               icon: const Icon(Icons.power_settings_new),
@@ -543,12 +749,15 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color, bool isDark) {
     return GlassContainer(
       borderRadius: 16,
       blur: 12,
       padding: const EdgeInsets.all(16),
-      backgroundColor: Colors.black.withValues(alpha: 0.3),
+      backgroundColor: isDark
+          ? Colors.black.withValues(alpha: 0.3)
+          : Colors.white.withValues(alpha: 0.85),
       borderColor: color.withValues(alpha: 0.4),
       child: Row(
         children: [
@@ -560,43 +769,22 @@ class _SurveyorDashboardScreenState extends State<SurveyorDashboardScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(color: AppColors.textGrey, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: AppColors.textWhite,
+                  style: TextStyle(
+                    color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.accentBlue, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(color: AppColors.textGrey, fontSize: 14),
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(color: AppColors.textWhite, fontWeight: FontWeight.w600, fontSize: 13),
-              textAlign: TextAlign.end,
             ),
           ),
         ],

@@ -9,10 +9,18 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.darkGradient,
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppColors.darkGradient
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+                ),
         ),
         child: SafeArea(
           child: Center(
@@ -47,26 +55,26 @@ class RoleSelectionScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'VisionTrack GIS',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textWhite,
+                      color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Select your authorization protocol to access portal',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
-                      color: AppColors.textGrey,
+                      color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 40),
 
                   // Admin Selection Glass Card
                   GlassContainer(
@@ -74,7 +82,9 @@ class RoleSelectionScreen extends StatelessWidget {
                     blur: 16,
                     padding: const EdgeInsets.all(24),
                     borderColor: AppColors.dangerRed.withValues(alpha: 0.4),
-                    backgroundColor: Colors.black.withValues(alpha: 0.3),
+                    backgroundColor: isDark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.88),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -83,7 +93,7 @@ class RoleSelectionScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.dangerRed.withValues(alpha: 0.2),
+                                color: AppColors.dangerRed.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
@@ -93,13 +103,13 @@ class RoleSelectionScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Column(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'POLICE HEADQUARTERS',
                                   style: TextStyle(
-                                    color: AppColors.textWhite,
+                                    color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -107,7 +117,7 @@ class RoleSelectionScreen extends StatelessWidget {
                                 Text(
                                   'System Administrator Portal',
                                   style: TextStyle(
-                                    color: AppColors.textGrey,
+                                    color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -115,11 +125,11 @@ class RoleSelectionScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
-                        const Text(
+                        const SizedBox(height: 16),
+                        Text(
                           'Full access to analytics dashboard, city-wide surveillance maps, range coverage, surveyor management, and camera registry.',
                           style: TextStyle(
-                            color: AppColors.textGrey,
+                            color: isDark ? AppColors.textGrey : const Color(0xFF475569),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -132,8 +142,8 @@ class RoleSelectionScreen extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.dangerRed,
                               foregroundColor: Colors.white,
-                              elevation: 6,
-                              shadowColor: AppColors.dangerRed.withValues(alpha: 0.4),
+                              elevation: 4,
+                              shadowColor: AppColors.dangerRed.withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -174,7 +184,9 @@ class RoleSelectionScreen extends StatelessWidget {
                     blur: 16,
                     padding: const EdgeInsets.all(24),
                     borderColor: AppColors.accentBlue.withValues(alpha: 0.4),
-                    backgroundColor: Colors.black.withValues(alpha: 0.3),
+                    backgroundColor: isDark
+                        ? Colors.black.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.88),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -183,7 +195,7 @@ class RoleSelectionScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppColors.accentBlue.withValues(alpha: 0.2),
+                                color: AppColors.accentBlue.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
@@ -193,13 +205,13 @@ class RoleSelectionScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Column(
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'FIELD SURVEYOR',
                                   style: TextStyle(
-                                    color: AppColors.textWhite,
+                                    color: isDark ? AppColors.textWhite : const Color(0xFF0F172A),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
                                   ),
@@ -207,7 +219,7 @@ class RoleSelectionScreen extends StatelessWidget {
                                 Text(
                                   'Field Operative Portal',
                                   style: TextStyle(
-                                    color: AppColors.textGrey,
+                                    color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -215,11 +227,11 @@ class RoleSelectionScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
-                        const Text(
+                        const SizedBox(height: 16),
+                        Text(
                           'Register new CCTV hardware in real-time with automated GPS location, range coverage calculation, and orientation azimuth tags.',
                           style: TextStyle(
-                            color: AppColors.textGrey,
+                            color: isDark ? AppColors.textGrey : const Color(0xFF475569),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -232,8 +244,8 @@ class RoleSelectionScreen extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.accentBlue,
                               foregroundColor: Colors.white,
-                              elevation: 6,
-                              shadowColor: AppColors.accentBlue.withValues(alpha: 0.4),
+                              elevation: 4,
+                              shadowColor: AppColors.accentBlue.withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),

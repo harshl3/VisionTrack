@@ -46,7 +46,9 @@ class CameraProvider with ChangeNotifier {
           .where((c) =>
               c.ownerName.toLowerCase().contains(q) ||
               c.cameraName.toLowerCase().contains(q) ||
-              c.contactNumber.contains(q))
+              c.contactNumber.contains(q) ||
+              (c.serialNumber?.toLowerCase().contains(q) ?? false) ||
+              (c.cameraBrand?.toLowerCase().contains(q) ?? false))
           .toList();
     }
 
@@ -115,6 +117,58 @@ class CameraProvider with ChangeNotifier {
     try {
       final camera = await CameraApiService.addCamera(token: token, payload: payload);
       _cameras = [camera, ..._cameras];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteCameraById(int cameraId) async {
+    final token = authProvider.token;
+    if (token == null) return false;
+
+    try {
+      await CameraApiService.deleteCamera(token: token, id: cameraId);
+      _cameras = _cameras.where((c) => c.id != cameraId).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateCameraStatus(int cameraId, String newStatus) async {
+    final token = authProvider.token;
+    if (token == null) return false;
+
+    try {
+      final updated = await CameraApiService.updateCamera(
+        token: token,
+        id: cameraId,
+        payload: {'status': newStatus},
+      );
+      _cameras = _cameras.map((c) => c.id == cameraId ? updated : c).toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSurveyor(int surveyorId) async {
+    final token = authProvider.token;
+    if (token == null) return false;
+
+    try {
+      await CameraApiService.deleteSurveyor(token: token, id: surveyorId);
+      _surveyors = _surveyors.where((s) => s.id != surveyorId).toList();
       notifyListeners();
       return true;
     } catch (e) {

@@ -8,9 +8,9 @@ class CameraApiService {
       dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:3000';
 
   static Map<String, String> _headers(String token) => {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
-  };
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
 
   static Future<List<Camera>> fetchCameras({
     required String token,
@@ -102,7 +102,14 @@ class CameraApiService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update camera (${response.statusCode})');
+      String message = 'Failed to update camera';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic> && body['message'] != null) {
+          message = body['message'].toString();
+        }
+      } catch (_) {}
+      throw Exception('(${response.statusCode}) $message');
     }
 
     return Camera.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
@@ -119,6 +126,27 @@ class CameraApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete camera (${response.statusCode})');
+    }
+  }
+
+  static Future<void> deleteSurveyor({
+    required String token,
+    required int id,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/api/users/$id'),
+      headers: _headers(token),
+    );
+
+    if (response.statusCode != 200) {
+      String message = 'Failed to delete surveyor';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic> && body['message'] != null) {
+          message = body['message'].toString();
+        }
+      } catch (_) {}
+      throw Exception('(${response.statusCode}) $message');
     }
   }
 }

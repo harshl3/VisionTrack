@@ -69,16 +69,24 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : const Color(0xFF0F172A)),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.darkGradient,
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? AppColors.darkGradient
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFEEF2F6), Color(0xFFE2E8F0)],
+                ),
         ),
         child: SafeArea(
           child: Center(
@@ -107,19 +115,22 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Operative Onboarding',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       letterSpacing: 1.1,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Create your surveyor field account',
-                    style: TextStyle(fontSize: 14, color: AppColors.textGrey),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? AppColors.textGrey : const Color(0xFF64748B),
+                    ),
                   ),
                   const SizedBox(height: 36),
 
@@ -127,8 +138,12 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                     borderRadius: 24,
                     blur: 18,
                     padding: const EdgeInsets.all(28),
-                    borderColor: AppColors.accentBlue.withValues(alpha: 0.4),
-                    backgroundColor: Colors.black.withValues(alpha: 0.35),
+                    borderColor: isDark
+                        ? AppColors.accentBlue.withValues(alpha: 0.4)
+                        : const Color(0xFFCBD5E1),
+                    backgroundColor: isDark
+                        ? Colors.black.withValues(alpha: 0.35)
+                        : Colors.white.withValues(alpha: 0.88),
                     child: Column(
                       children: [
                         GlassTextField(
